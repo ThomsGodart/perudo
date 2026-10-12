@@ -45,18 +45,46 @@ final class RoomPlayer {
 
 /// What everyone in a room knows before the game starts.
 final class Lobby {
-  const Lobby({
+  Lobby({
     required this.players,
     required this.bots,
     required this.dice,
     required this.calza,
-  });
+    List<String?>? order,
+  }) : order = _validOrder(order, players, bots);
 
-  /// The host first, then the guests in the order they came.
+  /// In the order of the table: the host first, then the guests as they
+  /// came or as the host placed them.
   final List<RoomPlayer> players;
 
   /// How many bots will fill the table.
   final int bots;
+
+  /// Who sits where around the table: the id of a player, or null for a
+  /// bot. The host is first.
+  final List<String?> order;
+
+  /// The table as it will be dealt, a bot being null.
+  List<RoomPlayer?> get seats => [
+    for (final id in order)
+      id == null ? null : players.firstWhere((player) => player.id == id),
+  ];
+
+  /// [order] if it seats everyone once, else people first and bots after.
+  static List<String?> _validOrder(
+    List<String?>? order,
+    List<RoomPlayer> players,
+    int bots,
+  ) {
+    final ids = [for (final player in players) player.id];
+    if (order != null &&
+        order.length == ids.length + bots &&
+        order.nonNulls.toSet().length == ids.length &&
+        order.nonNulls.every(ids.contains)) {
+      return List.unmodifiable(order);
+    }
+    return List.unmodifiable([...ids, ...List<String?>.filled(bots, null)]);
+  }
 
   /// How many dice everyone will start with.
   final int dice;
@@ -67,6 +95,7 @@ final class Lobby {
   Json toJson() => {
     'players': [for (final player in players) player.toJson()],
     'bots': bots,
+    'seats': order,
     'dice': dice,
     'calza': calza,
   };
@@ -77,6 +106,12 @@ final class Lobby {
         RoomPlayer.fromJson(player as Map),
     ],
     bots: _int(json['bots']) ?? 0,
+    order: switch (json['seats']) {
+      final List<Object?> seats when seats.every((id) => id is String?) => [
+        for (final id in seats) id as String?,
+      ],
+      _ => null,
+    },
     dice: _int(json['dice']) ?? GameOptions.maxDice,
     calza: json['calza'] as bool? ?? true,
   );
@@ -94,7 +129,7 @@ String newRoomCode([Random? random]) {
   ).join();
 }
 
-const botNames = ['Paco', 'Inti', 'Chaska', 'Amaru', 'Killa', 'Tupac', 'Nina'];
+const botNames = ['Inti', 'Chaska', 'Amaru', 'Killa', 'Tupac', 'Nina', 'Wayra'];
 
 /// This phone's place in an online room, as host or as guest. Once the game
 /// has started it is also the feed the table is drawn from.
@@ -213,6 +248,9 @@ class HostRoom extends OnlineRoom {
 
   final List<RoomPlayer> _players = [];
   int _bots = 0;
+
+  /// Who sits where, as in [Lobby.order].
+  final List<String?> _order = [];
   int _dice = GameOptions.maxDice;
   bool _calza = true;
 
@@ -239,14 +277,33 @@ class HostRoom extends OnlineRoom {
 
   void _publishLobby() {
     _rev++;
+    _seatEveryone();
     lobby = Lobby(
       players: List.of(_players),
       bots: _bots,
+      order: List.of(_order),
       dice: _dice,
       calza: _calza,
     );
     transport.send({'type': 'lobby', 'rev': _rev, ...lobby!.toJson()});
     if (status != RoomStatus.connecting) notifyListeners();
+  }
+
+  /// Brings [_order] in line with who is in the room: whoever left gives
+  /// their chair up, newcomers and new bots sit at the end.
+  void _seatEveryone() {
+    final ids = {for (final player in _players) player.id};
+    _order.removeWhere((id) => id != null && !ids.contains(id));
+    _order.addAll(ids.difference(_order.toSet()));
+    for (var extra = _order.length - ids.length - _bots; extra > 0; extra--) {
+      _order.removeAt(_order.lastIndexOf(null));
+    }
+    while (_order.length < ids.length + _bots) {
+      _order.add(null);
+    }
+    _players.sort(
+      (a, b) => _order.indexOf(a.id).compareTo(_order.indexOf(b.id)),
+    );
   }
 
   void setBots(int bots) {
@@ -261,6 +318,16 @@ class HostRoom extends OnlineRoom {
 
   void setCalza(bool calza) {
     _calza = calza;
+    _publishLobby();
+  }
+
+  /// Moves whoever sits at [from], a guest or a bot, to [to] around the
+  /// table. The host stays first: around a table, that loses nothing.
+  void reorder(int from, int to) {
+    if (_table != null || from == to) return;
+    if (from < 1 || from >= _order.length) return;
+    if (to < 1 || to >= _order.length) return;
+    _order.insert(to, _order.removeAt(from));
     _publishLobby();
   }
 
@@ -396,7 +463,7 @@ class HostRoom extends OnlineRoom {
   }
 
   /// Starts the game with whoever is in the room and the bots asked for.
-  /// Seats are shuffled so that people and bots are mixed.
+  /// Everyone sits in the order of the lobby, as around their own table.
   void start() {
     if (!canStart || _table != null) return;
     final taken = lobby!.takenColors;
@@ -405,14 +472,15 @@ class HostRoom extends OnlineRoom {
         if (!taken.contains(index)) index,
     ]..shuffle(_random);
     final names = List.of(botNames)..shuffle(_random);
-    final seats = <(String?, SeatInfo)>[
-      for (final player in _players)
-        (player.id, SeatInfo(name: player.name, color: player.color)),
-      for (var bot = 0; bot < _bots; bot++)
-        (null, SeatInfo(name: names[bot], color: free[bot], isBot: true)),
-    ]..shuffle(_random);
-    _seatIds = [for (final (id, _) in seats) id];
-    _deal([for (final (_, seat) in seats) seat], number: 1);
+    var bot = 0;
+    _seatIds = lobby!.order;
+    _deal([
+      for (final player in lobby!.seats)
+        if (player != null)
+          SeatInfo(name: player.name, color: player.color)
+        else
+          SeatInfo(name: names[bot], color: free[bot++], isBot: true),
+    ], number: 1);
   }
 
   /// Plays again in the same room: same seats, same options, new dice.

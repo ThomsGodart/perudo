@@ -26,7 +26,8 @@ abstract final class Strings {
   static const diceColorNote =
       'Si quelqu\'un a déjà cette couleur dans une partie en ligne, une '
       'autre te sera donnée : tu pourras la changer dans le salon.';
-  static const nameRequired = 'Choisis un nom (autre que « Toi »).';
+  static const nameRequired =
+      'Choisis un autre nom : ni « Toi », ni un mot du jeu (Paco, Calza, Dé…).';
 
   // Solo setup
   static const soloTitle = 'Partie contre des bots';
@@ -140,6 +141,13 @@ abstract final class Strings {
   static const onlineBots = 'Bots';
   static const onlinePickColor = 'Tes dés';
   static const onlineHostTag = 'hôte';
+  static const onlineOrder = 'Le tour de table suit cette liste.';
+  static const onlineOrderHost =
+      'Le tour de table suit cette liste. Fais glisser la poignée, ou '
+      'maintiens une ligne appuyée, pour placer chacun comme autour de la '
+      'vraie table.';
+  static const onlineBot = 'Bot';
+  static String onlineMove(String name) => 'Déplacer $name';
   static const onlineAwayTag = 'absent';
   static const onlineHostAway =
       'L\'hôte ne répond plus : la partie reprendra à son retour.';

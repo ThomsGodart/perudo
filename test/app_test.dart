@@ -295,8 +295,27 @@ void main() {
     await tester.tap(find.byKey(const Key('online-bots-plus')));
     await tester.pump();
 
+    // The host drags the bot by its handle to sit before Ana.
+    expect(host.lobby!.order, ['host', 'ana', null]);
+    final drag = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('online-handle-2'))),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    for (var step = 0; step < 7; step++) {
+      await drag.moveBy(const Offset(0, -10));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(host.lobby!.order, ['host', null, 'ana']);
+
     guest.chat.send('Salut 🎲', fromName: 'Ana');
     await tester.pump(const Duration(milliseconds: 50));
+    await tester.scrollUntilVisible(
+      find.text('Salut 🎲'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Salut 🎲'), findsOneWidget);
 
     await tester.ensureVisible(find.byKey(const Key('online-start')));
@@ -327,6 +346,15 @@ void profileTests() {
     expect(first.diceColor, 2);
     first.setProfile(name: 'Thomas', color: 2);
     expect(first.playerName, 'Thomas');
+
+    // Nor is anybody called as the game speaks.
+    for (final word in ['Paco', 'pacos', 'CALZA', 'Dudo', 'Palifico', 'Dé']) {
+      expect(AppSettings.isAllowedName(word), isFalse, reason: word);
+      first.setProfile(name: word, color: 2);
+      expect(first.playerName, 'Thomas');
+    }
+    expect(AppSettings.isAllowedName('Pacôme'), isTrue);
+    expect(botNames.every(AppSettings.isAllowedName), isTrue);
 
     // A profile saved by an earlier version is given a name too.
     final old = MemorySettingsStore()..write('name', 'Toi');

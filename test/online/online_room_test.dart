@@ -66,6 +66,48 @@ void main() {
     });
   });
 
+  test('the host seats people and bots as around their own table', () {
+    fakeAsync((async) {
+      final h = host();
+      final guests = [guest('ana'), guest('bob')];
+      async.elapse(const Duration(seconds: 4));
+      h.setBots(2);
+      List<String?> table(OnlineRoom room) => [
+        for (final seat in room.lobby!.seats) seat?.name,
+      ];
+      expect(table(h), ['Hôte', 'ana', 'bob', null, null]);
+
+      // A bot between the host and ana, bob last.
+      h.reorder(3, 1);
+      h.reorder(3, 4);
+      // The host stays first, and nobody leaves the table.
+      h.reorder(0, 2);
+      h.reorder(2, 0);
+      h.reorder(1, 9);
+      async.elapse(const Duration(seconds: 1));
+      for (final room in <OnlineRoom>[h, ...guests]) {
+        expect(table(room), ['Hôte', null, 'ana', null, 'bob']);
+      }
+
+      // One bot less is the last one; whoever comes sits at the end.
+      h.setBots(1);
+      final cleo = guest('cleo');
+      async.elapse(const Duration(seconds: 4));
+      expect(table(cleo), ['Hôte', null, 'ana', 'bob', 'cleo']);
+
+      h.start();
+      async.elapse(const Duration(seconds: 1));
+      for (final room in <OnlineRoom>[h, ...guests, cleo]) {
+        final seats = room.snapshot.value!.seats;
+        expect(
+          [for (final seat in seats) seat.isBot ? null : seat.name],
+          ['Hôte', null, 'ana', 'bob', 'cleo'],
+        );
+      }
+      expect(guests[1].snapshot.value!.you, 3);
+    });
+  });
+
   test('a quick game deals the dice the host chose', () {
     fakeAsync((async) {
       final h = host();

@@ -244,33 +244,7 @@ class _RoomScreenState extends State<RoomScreen> {
           style: TextStyle(color: Tokens.mutedText, fontSize: 15),
         ),
         const SizedBox(height: Tokens.space3),
-        for (final (index, player) in lobby.players.indexed)
-          ListTile(
-            key: Key('online-player-${player.id}'),
-            dense: true,
-            leading: DieView(
-              face: 5,
-              color: Tokens.dice(player.color),
-              size: 30,
-            ),
-            title: Text(
-              player.name,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-            trailing: Text(
-              [
-                if (index == 0) Strings.onlineHostTag,
-                if (player.id == room.selfId) Strings.you,
-              ].join(' · '),
-              style: const TextStyle(color: Tokens.mutedText),
-            ),
-          ),
-        for (var bot = 0; bot < lobby.bots; bot++)
-          const ListTile(
-            dense: true,
-            leading: Icon(Icons.smart_toy_outlined, size: 30),
-            title: Text('Bot', style: TextStyle(fontSize: 17)),
-          ),
+        ..._seats(lobby),
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: Tokens.space4,
@@ -304,6 +278,90 @@ class _RoomScreenState extends State<RoomScreen> {
         LobbyChat(chat: room.chat, fromName: room.chat.selfName),
       ],
     );
+  }
+
+  /// The table in its order. The host drags everyone but themself.
+  List<Widget> _seats(Lobby lobby) {
+    final room = _room;
+    final seats = lobby.seats;
+    Widget seat(int index, {Widget? handle}) {
+      final player = seats[index];
+      if (player == null) {
+        return ListTile(
+          dense: true,
+          leading: const Icon(Icons.smart_toy_outlined, size: 30),
+          title: const Text(Strings.onlineBot, style: TextStyle(fontSize: 17)),
+          trailing: handle,
+        );
+      }
+      final tags = Text(
+        [
+          if (index == 0) Strings.onlineHostTag,
+          if (player.id == room.selfId) Strings.you,
+        ].join(' · '),
+        style: const TextStyle(color: Tokens.mutedText),
+      );
+      return ListTile(
+        key: Key('online-player-${player.id}'),
+        dense: true,
+        leading: DieView(face: 5, color: Tokens.dice(player.color), size: 30),
+        title: Text(
+          player.name,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
+        trailing: handle == null
+            ? tags
+            : Row(mainAxisSize: MainAxisSize.min, children: [tags, handle]),
+      );
+    }
+
+    final movable = room is HostRoom && seats.length > 2;
+    return [
+      seat(0),
+      if (!movable)
+        for (var index = 1; index < seats.length; index++) seat(index)
+      else
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          // The handle moves a row at once; the rest of the row moves it
+          // after a hold, so that sliding over it still scrolls.
+          buildDefaultDragHandles: false,
+          onReorderItem: (from, to) => room.reorder(from + 1, to + 1),
+          children: [
+            for (var index = 1, bot = 0; index < seats.length; index++)
+              ReorderableDelayedDragStartListener(
+                key: ValueKey(seats[index]?.id ?? 'bot-${bot++}'),
+                index: index - 1,
+                child: seat(
+                  index,
+                  handle: ReorderableDragStartListener(
+                    index: index - 1,
+                    child: Tooltip(
+                      message: Strings.onlineMove(
+                        seats[index]?.name ?? Strings.onlineBot,
+                      ),
+                      child: SizedBox.square(
+                        key: Key('online-handle-$index'),
+                        dimension: 48,
+                        child: const Icon(Icons.drag_handle),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      if (seats.length > 2)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Tokens.space4),
+          child: Text(
+            movable ? Strings.onlineOrderHost : Strings.onlineOrder,
+            key: const Key('online-order-hint'),
+            style: const TextStyle(color: Tokens.mutedText, fontSize: 13),
+          ),
+        ),
+    ];
   }
 
   List<Widget> _hostControls(HostRoom room, Lobby lobby) => [

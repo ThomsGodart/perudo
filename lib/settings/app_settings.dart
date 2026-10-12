@@ -44,8 +44,8 @@ enum BotSpeed { slow, normal, fast }
 /// The player's profile and preferences.
 class AppSettings extends ChangeNotifier {
   AppSettings(this._store) {
-    // Nobody is called « Toi »: a name is drawn at the first launch, and
-    // kept until the player picks their own.
+    // Nobody is called « Toi » or « Paco »: a name is drawn at the first
+    // launch, and kept until the player picks their own.
     final saved = _store.read('name');
     if (saved == null || !isAllowedName(saved)) {
       playerName = randomName();
@@ -102,10 +102,32 @@ class AppSettings extends ChangeNotifier {
         '${10 + source.nextInt(90)}';
   }
 
-  /// Whether [name] tells a player apart: not blank, and not « Toi ».
+  /// What nobody may be called: the table would read as if the game spoke.
+  static const _reservedNames = {
+    'toi',
+    'perudo',
+    'paco',
+    'pacos',
+    'calza',
+    'dudo',
+    'palifico',
+    'de',
+    'des',
+    'bot',
+    'bots',
+    'menteur',
+  };
+
+  /// Whether [name] tells a player apart: not blank, not « Toi », and not a
+  /// word of the game, with or without its accents.
   static bool isAllowedName(String name) {
-    final trimmed = name.trim().toLowerCase();
-    return trimmed.isNotEmpty && trimmed != 'toi';
+    final plain = name
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp('[éèêë]'), 'e')
+        .replaceAll(RegExp('[àâä]'), 'a')
+        .replaceAll(RegExp('[ôö]'), 'o');
+    return plain.isNotEmpty && !_reservedNames.contains(plain);
   }
 
   static const maxNameLength = 14;
