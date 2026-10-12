@@ -15,8 +15,6 @@ flutter run
 flutter test
 ```
 
-Sans adresse de salons, l'appli ne propose que les bots.
-
 ## Architecture
 
 | Morceau | Où | Hébergement |
@@ -33,7 +31,7 @@ Le protocole : chaque téléphone ouvre `wss://…/room/CODE?id=SON_ID` et envoi
 ```sh
 cd cloudflare
 npx wrangler login     # une seule fois
-npx wrangler deploy    # affiche https://perudo-rooms.<compte>.workers.dev
+npx wrangler deploy    # https://perudo-rooms.thomsgodart.workers.dev
 ```
 
 Les pages web autorisées à ouvrir un salon sont listées dans `ALLOWED_ORIGINS` (`cloudflare/wrangler.jsonc`) ; `localhost` et les applis natives passent toujours.
@@ -45,19 +43,12 @@ cd cloudflare && npx wrangler dev                      # http://localhost:8787
 flutter run -d chrome --dart-define=ROOMS_URL=http://localhost:8787
 ```
 
-Contre le Worker déployé :
-
-```sh
-flutter run --dart-define=ROOMS_URL=https://perudo-rooms.<compte>.workers.dev
-```
+Sans `--dart-define`, l'appli parle au Worker déployé : son adresse est écrite dans `lib/online/online_backend.dart`. Elle n'est pas un secret, elle est de toute façon dans le JavaScript servi.
 
 ## Publier le site (GitHub Pages)
 
 1. Dans le dépôt GitHub : **Settings → Pages → Source : GitHub Actions**.
-2. **Settings → Secrets and variables → Actions → Variables** : créer `ROOMS_URL` avec l'adresse du Worker.
-3. Pousser sur `main` : le workflow analyse, teste, construit avec `--base-href /perudo/` et publie.
-
-L'adresse du Worker n'est pas un secret : elle est de toute façon dans le JavaScript servi.
+2. Pousser sur `main` : le workflow analyse, teste, construit avec `--base-href /perudo/` et publie.
 
 ## Organisation
 

@@ -26,12 +26,9 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      # ROOMS_URL is a repository variable: the address of the Cloudflare
-      # Worker. Without it the site plays against bots only.
       - run: >
           flutter build web --release
           --base-href "/${{ github.event.repository.name }}/"
-          --dart-define=ROOMS_URL=${{ vars.ROOMS_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
