@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "perudo-rooms",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  // SQLite-backed classes are the ones the free plan allows.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "vars": {
+    // The web pages allowed to open a room, separated by commas. Apps that
+    // are not web pages send no origin and are always let in, as is a page
+    // served from localhost.
+    "ALLOWED_ORIGINS": "https://thomsgodart.github.io"
+  }
+}
