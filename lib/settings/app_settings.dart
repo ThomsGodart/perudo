@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bots/bot.dart';
+import '../engine/game.dart';
 import '../game/table.dart';
 import '../theme/tokens.dart';
 
@@ -60,6 +61,10 @@ class AppSettings extends ChangeNotifier {
     botSpeed = BotSpeed.values[(_int('botSpeed') ?? 1).clamp(0, 2)];
     botLevel = BotLevel.values[(_int('botLevel') ?? 1).clamp(0, 2)];
     soloBots = (_int('soloBots') ?? 3).clamp(1, 5);
+    startDice = (_int('startDice') ?? GameOptions.maxDice).clamp(
+      GameOptions.minDice,
+      GameOptions.maxDice,
+    );
     calza = _bool('calza') ?? true;
     var id = _store.read('id');
     if (id == null) {
@@ -127,6 +132,9 @@ class AppSettings extends ChangeNotifier {
 
   /// How many bots a solo game was last played against.
   late int soloBots;
+
+  /// How many dice each player starts a solo game with.
+  late int startDice;
   late bool calza;
 
   int? _int(String key) => int.tryParse(_store.read(key) ?? '');
@@ -165,6 +173,7 @@ class AppSettings extends ChangeNotifier {
     BotSpeed? botSpeed,
     BotLevel? botLevel,
     int? soloBots,
+    int? startDice,
     bool? calza,
   }) {
     this.showDiceTally = showDiceTally ?? this.showDiceTally;
@@ -174,6 +183,7 @@ class AppSettings extends ChangeNotifier {
     this.botSpeed = botSpeed ?? this.botSpeed;
     this.botLevel = botLevel ?? this.botLevel;
     this.soloBots = soloBots ?? this.soloBots;
+    this.startDice = startDice ?? this.startDice;
     this.calza = calza ?? this.calza;
     _store.write('showDiceTally', '${this.showDiceTally}');
     _store.write('showOpponentDice', '${this.showOpponentDice}');
@@ -182,6 +192,7 @@ class AppSettings extends ChangeNotifier {
     _store.write('botSpeed', '${this.botSpeed.index}');
     _store.write('botLevel', '${this.botLevel.index}');
     _store.write('soloBots', '${this.soloBots}');
+    _store.write('startDice', '${this.startDice}');
     _store.write('calza', '${this.calza}');
     notifyListeners();
   }

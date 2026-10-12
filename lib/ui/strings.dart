@@ -37,6 +37,8 @@ abstract final class Strings {
     BotLevel.normal => 'Normal',
     BotLevel.hard => 'Difficile',
   };
+  static const diceCount = 'Dés par joueur';
+  static const diceCountNote = 'Moins de dés : une partie plus rapide.';
   static const calzaOption = 'Jouer avec le Calza';
   static const calzaOptionNote =
       'Annoncer que la mise est exacte : un dé regagné si c\'est vrai, un dé '
@@ -158,8 +160,8 @@ abstract final class Strings {
   static const rulesSections = [
     (
       'But du jeu',
-      'Chaque joueur lance cinq dés sous son gobelet et ne voit que les '
-          'siens. À tour de rôle, on annonce combien de dés d\'une valeur il y '
+      'Chaque joueur lance cinq dés (ou moins, pour une partie rapide) sous '
+          'son gobelet et ne voit que les siens. À tour de rôle, on annonce combien de dés d\'une valeur il y '
           'a au total sous tous les gobelets. Le dernier joueur à qui il reste '
           'des dés gagne.',
     ),

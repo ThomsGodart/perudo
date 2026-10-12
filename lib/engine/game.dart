@@ -20,11 +20,13 @@ final class IllegalMove implements Exception {
 final class GameOptions {
   const GameOptions({
     required this.players,
-    this.startDice = 5,
+    this.startDice = maxDice,
     this.calza = true,
   });
 
   final int players;
+
+  /// How many dice everyone starts with: fewer makes a shorter game.
   final int startDice;
 
   /// Whether « Calza » (the bid is exactly right) may be called.
@@ -32,6 +34,8 @@ final class GameOptions {
 
   static const minPlayers = 2;
   static const maxPlayers = 6;
+  static const minDice = 1;
+  static const maxDice = 5;
 
   GameOptions copyWith({int? players, bool? calza}) => GameOptions(
     players: players ?? this.players,
@@ -47,7 +51,7 @@ final class GameOptions {
 
   static GameOptions fromJson(Map<Object?, Object?> json) => GameOptions(
     players: (json['players'] as num).toInt(),
-    startDice: (json['startDice'] as num?)?.toInt() ?? 5,
+    startDice: (json['startDice'] as num?)?.toInt() ?? maxDice,
     calza: json['calza'] as bool? ?? true,
   );
 }

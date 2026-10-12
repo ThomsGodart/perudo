@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../engine/game.dart';
 import '../game/table_screen.dart';
 import '../settings/app_settings.dart';
 import '../settings/profile_dialog.dart';
@@ -327,6 +328,34 @@ class _RoomScreenState extends State<RoomScreen> {
             key: const Key('online-bots-plus'),
             onPressed: lobby.bots < room.maxBots
                 ? () => room.setBots(lobby.bots + 1)
+                : null,
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+    ),
+    ListTile(
+      title: const Text(Strings.diceCount),
+      subtitle: const Text(Strings.diceCountNote),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            key: const Key('online-dice-minus'),
+            onPressed: lobby.dice > GameOptions.minDice
+                ? () => room.setDice(lobby.dice - 1)
+                : null,
+            icon: const Icon(Icons.remove),
+          ),
+          Text(
+            '${lobby.dice}',
+            key: const Key('online-dice'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          IconButton(
+            key: const Key('online-dice-plus'),
+            onPressed: lobby.dice < GameOptions.maxDice
+                ? () => room.setDice(lobby.dice + 1)
                 : null,
             icon: const Icon(Icons.add),
           ),

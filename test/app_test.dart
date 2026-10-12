@@ -96,8 +96,21 @@ void main() {
     await tester.pumpWidget(PerudoApp(settings: settings, transports: null));
     await tester.tap(find.byKey(const Key('home-solo')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('5'));
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('solo-bots')),
+        matching: find.text('5'),
+      ),
+    );
     await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('solo-dice')),
+        matching: find.text('3'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(settings.startDice, 3);
     await tester.tap(find.byKey(const Key('solo-start')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));

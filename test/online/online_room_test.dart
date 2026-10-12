@@ -66,6 +66,29 @@ void main() {
     });
   });
 
+  test('a quick game deals the dice the host chose', () {
+    fakeAsync((async) {
+      final h = host();
+      final ana = guest('ana');
+      async.elapse(const Duration(seconds: 4));
+      h.setDice(2);
+      async.elapse(const Duration(seconds: 1));
+      expect(ana.lobby!.dice, 2);
+      h.setDice(0);
+      expect(h.lobby!.dice, GameOptions.minDice);
+      h.setDice(2);
+      h.start();
+      async.elapse(const Duration(seconds: 1));
+
+      for (final room in <OnlineRoom>[h, ana]) {
+        final view = room.snapshot.value!.view;
+        expect(view.options.startDice, 2);
+        expect(view.myDice.length, 2);
+        expect(view.totalDice, 4);
+      }
+    });
+  });
+
   test('a whole game is played across phones, bots included', () {
     fakeAsync((async) {
       final h = host();

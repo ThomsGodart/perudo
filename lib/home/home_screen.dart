@@ -70,7 +70,11 @@ class _HomeScreenState extends State<HomeScreen> {
         settings: _settings,
         table: GameTable(
           seats: seats,
-          options: GameOptions(players: seats.length, calza: _settings.calza),
+          options: GameOptions(
+            players: seats.length,
+            startDice: _settings.startDice,
+            calza: _settings.calza,
+          ),
           botLevel: _settings.botLevel,
           pace: _settings.pace,
           random: random,
@@ -187,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 }
 
-/// How many bots, how good, and with or without Calza.
+/// How many bots, how good, how many dice, and with or without Calza.
 class _SoloSetup extends StatelessWidget {
   const _SoloSetup({required this.settings});
 
@@ -241,6 +245,29 @@ class _SoloSetup extends StatelessWidget {
               selected: {settings.botLevel},
               onSelectionChanged: (picked) =>
                   settings.update(botLevel: picked.first),
+            ),
+            const SizedBox(height: Tokens.space4),
+            const Text(Strings.diceCount),
+            const SizedBox(height: Tokens.space2),
+            SegmentedButton<int>(
+              key: const Key('solo-dice'),
+              showSelectedIcon: false,
+              segments: [
+                for (
+                  var dice = GameOptions.minDice;
+                  dice <= GameOptions.maxDice;
+                  dice++
+                )
+                  ButtonSegment(value: dice, label: Text('$dice')),
+              ],
+              selected: {settings.startDice},
+              onSelectionChanged: (picked) =>
+                  settings.update(startDice: picked.first),
+            ),
+            const SizedBox(height: Tokens.space2),
+            const Text(
+              Strings.diceCountNote,
+              style: TextStyle(color: Tokens.mutedText, fontSize: 13),
             ),
             const SizedBox(height: Tokens.space2),
             SwitchListTile(

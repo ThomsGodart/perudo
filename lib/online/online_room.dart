@@ -45,13 +45,21 @@ final class RoomPlayer {
 
 /// What everyone in a room knows before the game starts.
 final class Lobby {
-  const Lobby({required this.players, required this.bots, required this.calza});
+  const Lobby({
+    required this.players,
+    required this.bots,
+    required this.dice,
+    required this.calza,
+  });
 
   /// The host first, then the guests in the order they came.
   final List<RoomPlayer> players;
 
   /// How many bots will fill the table.
   final int bots;
+
+  /// How many dice everyone will start with.
+  final int dice;
   final bool calza;
 
   Set<int> get takenColors => {for (final player in players) player.color};
@@ -59,6 +67,7 @@ final class Lobby {
   Json toJson() => {
     'players': [for (final player in players) player.toJson()],
     'bots': bots,
+    'dice': dice,
     'calza': calza,
   };
 
@@ -68,6 +77,7 @@ final class Lobby {
         RoomPlayer.fromJson(player as Map),
     ],
     bots: _int(json['bots']) ?? 0,
+    dice: _int(json['dice']) ?? GameOptions.maxDice,
     calza: json['calza'] as bool? ?? true,
   );
 }
@@ -203,6 +213,7 @@ class HostRoom extends OnlineRoom {
 
   final List<RoomPlayer> _players = [];
   int _bots = 0;
+  int _dice = GameOptions.maxDice;
   bool _calza = true;
 
   /// Goes up with every change of the lobby or of the game, so that a phone
@@ -228,13 +239,23 @@ class HostRoom extends OnlineRoom {
 
   void _publishLobby() {
     _rev++;
-    lobby = Lobby(players: List.of(_players), bots: _bots, calza: _calza);
+    lobby = Lobby(
+      players: List.of(_players),
+      bots: _bots,
+      dice: _dice,
+      calza: _calza,
+    );
     transport.send({'type': 'lobby', 'rev': _rev, ...lobby!.toJson()});
     if (status != RoomStatus.connecting) notifyListeners();
   }
 
   void setBots(int bots) {
     _bots = bots.clamp(0, maxBots);
+    _publishLobby();
+  }
+
+  void setDice(int dice) {
+    _dice = dice.clamp(GameOptions.minDice, GameOptions.maxDice);
     _publishLobby();
   }
 
@@ -405,7 +426,11 @@ class HostRoom extends OnlineRoom {
   void _deal(List<SeatInfo> seats, {required int number}) {
     final table = _table = GameTable(
       seats: seats,
-      options: GameOptions(players: seats.length, calza: _calza),
+      options: GameOptions(
+        players: seats.length,
+        startDice: _dice,
+        calza: _calza,
+      ),
       botLevel: botLevel,
       pace: pace,
       number: number,
